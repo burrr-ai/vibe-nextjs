@@ -1,0 +1,57 @@
+// ===========================================
+// Entity Schema
+// 엔티티 추가/변경 시 여기를 먼저 갱신한다
+// ===========================================
+
+
+// -------------------------------------------
+// [auth 스킬] 아래 테이블들은 auth-setup 스킬 발동 시 자동 생성됨
+// 서비스별로 {service}_auth__ 접두사가 붙는다
+// 예: app_auth__user, admin_auth__user
+// -------------------------------------------
+
+// Table {service}_auth__user {
+//   id text [pk]
+//   name text
+//   email text [not null, unique]
+//   emailVerified integer [not null]
+//   image text
+//   createdAt integer [not null]
+//   updatedAt integer [not null]
+// }
+
+// Table {service}_auth__session {
+//   id text [pk]
+//   expiresAt integer [not null]
+//   token text [not null, unique]
+//   createdAt integer [not null]
+//   updatedAt integer [not null]
+//   ipAddress text
+//   userAgent text
+//   userId text [not null, ref: > {service}_auth__user.id]
+// }
+
+// Table {service}_auth__account {
+//   id text [pk]
+//   accountId text [not null]
+//   providerId text [not null]
+//   userId text [not null, ref: > {service}_auth__user.id]
+//   accessToken text
+//   refreshToken text
+//   idToken text
+//   accessTokenExpiresAt integer
+//   refreshTokenExpiresAt integer
+//   scope text
+//   password text
+//   createdAt integer [not null]
+//   updatedAt integer [not null]
+// }
+
+// Table {service}_auth__verification {
+//   id text [pk]
+//   identifier text [not null]
+//   value text [not null]
+//   expiresAt integer [not null]
+//   createdAt integer
+//   updatedAt integer
+// }

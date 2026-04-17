@@ -1,0 +1,41 @@
+// ============================================================
+// 레퍼런스: services/{service}/api/user/actions/get-me.ts
+// 기존 mock을 실제 인증으로 교체할 때 참고한다.
+// ============================================================
+// 치환 대상:
+//   {service} → app, admin 등
+//   {Service} → App, Admin 등 (PascalCase)
+//   User type import 경로는 서비스에 맞게 조정
+// ============================================================
+
+'use server'
+
+import { get{Service}ServerSession } from '@/server/auth/{service}'
+import type { User } from '@/services/{service}/state/user'
+
+export async function getMe(): Promise<User | null> {
+  const session = await get{Service}ServerSession()
+  if (!session?.user) return null
+
+  // auth user를 User 타입으로 변환
+  return {
+    id: session.user.id,
+    email: session.user.email,
+    name: session.user.name ?? '',
+    image: session.user.image ?? null,
+    emailVerified: session.user.emailVerified,
+    createdAt: session.user.createdAt,
+    updatedAt: session.user.updatedAt,
+  }
+}
+
+// NOTE: member 테이블이 있는 경우, session.user.id로 member를 조회하여 반환
+// import { getDb } from '@/server/db'
+// import { member } from '@/server/db/schema'
+// import { eq } from 'drizzle-orm'
+//
+// const db = await getDb()
+// const row = await db.query.member.findFirst({
+//   where: eq(member.id, session.user.id)
+// })
+// return row ?? null

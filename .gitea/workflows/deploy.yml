@@ -1,0 +1,33 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      dispatchGroup:
+        description: "Workers for Platforms dispatch namespace"
+        required: true
+      publishId:
+        description: "Publish ID (will be used as --name)"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      BUILD_FOR_DEPLOY: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy to Workers for Platforms
+        env:
+          CI_BUILD: true
+        run: |
+          pnpm run deploy -- --dispatch-namespace "${{ inputs.dispatchGroup }}" --name "${{ inputs.publishId }}"

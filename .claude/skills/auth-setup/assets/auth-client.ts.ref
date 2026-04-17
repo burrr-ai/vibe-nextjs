@@ -1,0 +1,16 @@
+// ============================================================
+// 레퍼런스: src/lib/auth-client/{service}.ts
+// 서비스별로 이 파일을 참고하여 생성한다.
+// ============================================================
+// 치환 대상:
+//   {service}  → app, admin 등
+//   {basePath} → "/{service}/api/auth"
+// ============================================================
+
+"use client"
+
+import { createAuthClient } from "better-auth/react"
+
+export const {service}Auth = createAuthClient({
+  basePath: "{basePath}",
+})
