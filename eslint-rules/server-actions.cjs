@@ -92,13 +92,13 @@ module.exports = {
                 });
               }
             }
-            // createParallelAction(...) wrapping is allowed
+            // createAction(...) wrapping is allowed
             else if (
               init?.type === 'CallExpression' &&
               init.callee?.type === 'Identifier' &&
-              init.callee.name === 'createParallelAction'
+              init.callee.name === 'createAction'
             ) {
-              // OK — parallel action wrapper
+              // OK — action wrapper (safe + parallel composed)
             }
             // Non-function export (object, string, number, etc.)
             else {

@@ -1,6 +1,6 @@
 ---
 name: db-setup
-description: D1 database setup with Drizzle ORM. Triggers - "DB 연동", "데이터베이스 설정", "D1 추가", or when DB needed.
+description: D1 database setup with Drizzle ORM. Triggers - "connect DB", "set up database", "add D1", or when DB needed.
 ---
 
 ## Workflow

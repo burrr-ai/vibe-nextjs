@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAdminUser, type User } from '@/services/admin/state/user'
 import { Button } from '@/lib/components/ui/button'
@@ -58,7 +59,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
           {navItems.map((item) => {
             const isActive = pathname === item.href
             return (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
@@ -69,7 +70,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
               >
                 <item.icon className="h-4 w-4" />
                 {item.label}
-              </a>
+              </Link>
             )
           })}
         </nav>

@@ -1,6 +1,6 @@
 ---
 name: refactoring
-description: Refactor project based on .ai.md guidelines. Triggers - "리팩토링 해줘", "refactor"
+description: Refactor project based on .ai.md guidelines. Triggers - "refactor it", "refactor"
 ---
 
 # Refactoring Skill
@@ -84,30 +84,30 @@ ls src/server/repository/_data 2>/dev/null
 2. Ask user in plain text (NOT AskUserQuestion tool):
 
 ```
-현재 임시 데이터로 동작하는 기능들:
-- 회원 (user)
-- 상품 (product)
-- 주문 (order)
+Features currently running on mock data:
+- Members (user)
+- Products (product)
+- Orders (order)
 ...
 
-전부 다 실제로 연동할까요?
+Should we connect all of them to real data?
 ```
 
-**Translate domain names to Korean for non-developers:**
-- user → 회원
-- product → 상품
-- order → 주문
-- post → 게시글
-- comment → 댓글
-- like → 좋아요
-- cart → 장바구니
-- payment → 결제
+**Translate domain names to natural language for non-developers:**
+- user → Members
+- product → Products
+- order → Orders
+- post → Posts
+- comment → Comments
+- like → Likes
+- cart → Cart
+- payment → Payments
 - etc.
 
 3. Based on response:
-- **"네" / "응" / "ㅇㅇ"** → Pass all domains to Step 3-4
-- **Partial selection** (e.g., "회원만", "상품이랑 주문만") → Pass selected domains only
-- **"나중에" / "아니"** → Skip Step 3-4, go to Step 5
+- **"Yes" / "Yep" / "Sure"** → Pass all domains to Step 3-4
+- **Partial selection** (e.g., "just members", "products and orders only") → Pass selected domains only
+- **"Later" / "No"** → Skip Step 3-4, go to Step 5
 
 ### Step 3: Schema Setup (Selected Domains Only)
 

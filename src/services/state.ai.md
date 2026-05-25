@@ -1,37 +1,51 @@
-# State 레이어
+# State Layer
 
-## 위치
+## Location
 `services/{service}/state/{domain}/`
 
-## 구조
+## comwit Extra API & Detailed Syntax
+
+This doc only covers the frequently used comwit patterns. comwit has many more APIs beyond these.
+
+- `persist()` — automatically sync model fields to localStorage/sessionStorage (login token, theme, recently viewed items, etc.)
+- `query.realtime()` — real-time subscription
+- `derive` — read-only computed field derived from other fields
+- `rules` — per-field validation (accessed via `state.$validation`)
+- `@Retry()` — retry on failure (supports exponential backoff)
+- `@Queue()` — concurrency control (drop / queue / replace)
+- `@Log()`, `@Validate()` — logging / argument validation
+
+For usage, options, and signatures of these APIs, see https://library.comwit.io/llms.txt.
+
+## Structure
 
 ```
 state/product/
   ├── types.ts          # State + Actions types
   ├── model.ts          # model() with initial state
   ├── actions/
-  │     ├── init.ts     # SSR silent 초기화
+  │     ├── init.ts     # SSR silent initialization
   │     ├── load.ts     # loadList, loadDetail (query)
   │     ├── crud.ts     # create, update, delete
-  │     └── interact.ts # like, bookmark 등
+  │     └── interact.ts # like, bookmark, etc.
   └── index.ts          # create() hook + re-exports
 ```
 
-**types.ts를 먼저 작성한다.** Write order: types.ts → model.ts → actions/\*.ts → index.ts
+**Write types.ts first.** Write order: types.ts → model.ts → actions/\*.ts → index.ts
 
-## 공통 규칙
+## Common Rules
 
-- **state = 페이지 단위**: 하나의 state 도메인이 해당 페이지 정보를 대부분 충족하도록 리치하게 설계
-  - 하나의 state에서 여러 도메인을 load → state 분리가 잘못된 것
-  - 하나의 load에서 api 여러 개 호출 → api가 UI에 안 맞는 것
-- 의존 흐름: `page → state → api → repository`
-- 외부에서는 index.ts 통해서만 import
+- Manage list + detail + stats together in the model — on CRUD, do an optimistic update and refetch all related queries (list, stats, etc.)
+- Put all side effects in actions (do not expose them in UI components)
+  - Call toast sonner, @/lib/uilts/popup (popup.confirm, popup.alert), etc. inside the action
+  - If you need state from another model, do not accept it as an argument — cross-import the state model internally
+  - Actions should take as few arguments as possible and rely on internal state (so the caller doesn't need to know much)
+- Re-export api types or define additional types
+- Dependency flow: `page → state → api → repository`
 
 ## types.ts
 
-State + Actions 타입 정의. `Query<TData, TArg>` 로 query 필드 타입 지정.
-- list + detail + stats 함께 관리 — CRUD 시 optimistic update + 관련 query 모두 refetch (list, stats 등)
-- api의 타입을 re export하거나 추가로 정의
+Define State + Actions types. Type query fields with `Query<TData, TArg>`.
 
 ```ts
 import { Query } from 'comwit'
@@ -46,7 +60,7 @@ export type ProductState = {
   products: Query<Pageable<Product>, { page: number }>
   stats: Query<ProductStats, void>
   currentProduct: Product | null
-  // 일반 데이터 — query 아닌 로컬 상태
+  // Regular data — local state, not a query
   selectedIds: string[]
   isEditMode: boolean
 }
@@ -59,7 +73,7 @@ export type ProductActions = {
   delete(id: string): Promise<void>
   like(): Promise<void>
   openDetail(id: string): void
-  // 일반 데이터 조작
+  // Regular data manipulation
   toggleSelect(id: string): void
   clearSelection(): void
   setEditMode(value: boolean): void
@@ -68,30 +82,30 @@ export type ProductActions = {
 
 ## model.ts
 
-- query 두 가지: `query<TData, TArg>()` (일반), `query.infinite<TData, TArg>()` (무한스크롤)
-- `keepPreviousData`: pagination query에서만 사용
+- Two kinds of query: `query<TData, TArg>()` (regular), `query.infinite<TData, TArg>()` (infinite scroll)
+- `keepPreviousData`: use only on pagination queries
 
 ```ts
 import { model, query, keepPreviousData } from 'comwit'
 
 export const product = model<ProductState>({
-  // query 데이터 — 서버에서 fetch
+  // Query data — fetched from server
   products: query<Pageable<Product>, { page: number }>({
     initialData: { items: [], total: 0, page: 1, limit: 20, totalPages: 0 },
     queryFn: ({ page }) => api.product.findAll({ page, limit: 20 }),
-    placeholderData: keepPreviousData,  // pagination에서만 사용
+    placeholderData: keepPreviousData,  // pagination only
   }),
   stats: query<ProductStats, void>({
     initialData: { totalCount: 0, pendingCount: 0, activeCount: 0 },
     queryFn: () => api.product.getStats(),
   }),
   currentProduct: null,
-  // 일반 데이터 — 로컬 상태, action에서 직접 조작
+  // Regular data — local state, mutated directly in actions
   selectedIds: [],
   isEditMode: false,
 })
 
-// query.infinite — 무한스크롤
+// query.infinite — infinite scroll
 export const feed = model<FeedState>({
   posts: query.infinite<Post[], void>({
     initialData: [],
@@ -116,12 +130,13 @@ async loadMore() {
 
 ## actions/
 
-- Actions에 모든 side effect — UI handler는 action 하나만 호출
-- 확인 동작: `popup.confirm()` 사용 (`@/lib/utils/popup`)
+- Put all side effects in actions — UI handlers should call a single action
+- Confirmation flow: use `popup.confirm()` (`@/lib/utils/popup`)
 
-### init.ts — SSR silent 초기화
+### init.ts — SSR silent initialization
 
-- `silent()`로 서버 데이터 주입. useEffect 사용 금지
+- Inject server data with `silent()`. Do not use useEffect
+- For data that is handled via SSR silent init, do not call `init()` via `useEffect` in a client component — call `actions.init(initialData)` directly during render
 
 ```ts
 // actions/init.ts
@@ -151,9 +166,9 @@ function ProductDetail({ initialProduct }) {
 }
 ```
 
-### load.ts — query 호출
+### load.ts — query calls
 
-- `query(arg)` 로 서버 데이터 fetch. page에서 action만 호출하면 됨
+- Fetch server data with `query(arg)`. The page only needs to call the action
 
 ```ts
 import { action } from 'comwit'
@@ -170,9 +185,9 @@ export const loadActions = action<Pick<ProductActions, 'loadProducts'>>(({ state
 })
 ```
 
-### 일반 데이터 조작 — push, filter, 직접 할당
+### Regular data manipulation — push, filter, direct assignment
 
-query가 아닌 일반 필드는 action에서 직접 변경. 배열은 `push`, `pop`, `splice`, 재할당(`filter` 등) 모두 가능.
+For non-query fields, mutate directly in actions. Arrays support `push`, `pop`, `splice`, reassignment (`filter`, etc.).
 
 ```ts
 export const selectActions = action<Pick<ProductActions, 'toggleSelect' | 'clearSelection' | 'setEditMode'>>(({ state }) => {
@@ -182,18 +197,18 @@ export const selectActions = action<Pick<ProductActions, 'toggleSelect' | 'clear
     toggleSelect(id: string) {
       const idx = this.model.selectedIds.indexOf(id)
       if (idx >= 0) {
-        this.model.selectedIds.splice(idx, 1)   // 제거
+        this.model.selectedIds.splice(idx, 1)   // remove
       } else {
-        this.model.selectedIds.push(id)          // 추가
+        this.model.selectedIds.push(id)          // add
       }
     }
 
     clearSelection() {
-      this.model.selectedIds = []                // 재할당
+      this.model.selectedIds = []                // reassign
     }
 
     setEditMode(value: boolean) {
-      this.model.isEditMode = value              // 단순 할당
+      this.model.isEditMode = value              // simple assignment
     }
   }
   return new SelectActions()
@@ -215,11 +230,11 @@ export const crudActions = action<Pick<ProductActions, 'create' | 'delete'>>(({ 
       toast.error(error instanceof Error ? error.message : 'Unexpected error')
     })
     async create(title: string) {
-      // optimistic — stats 카운트 즉시 반영
+      // optimistic — apply stats count immediately
       this.model.stats.data.totalCount += 1
       this.model.stats.data.pendingCount += 1
       await api.product.create({ title })
-      // refetch — list + stats 모두 갱신
+      // refetch — refresh both list and stats
       await Promise.all([
         this.model.products.refetch(),
         this.model.stats.refetch(),
@@ -230,8 +245,8 @@ export const crudActions = action<Pick<ProductActions, 'create' | 'delete'>>(({ 
       toast.error(error instanceof Error ? error.message : 'Unexpected error')
     })
     async delete(id: string) {
-      if (!await popup.confirm({ title: '정말 삭제하시겠어요?' })) return
-      // optimistic — list에서 제거 + stats 카운트 차감
+      if (!await popup.confirm({ title: 'Are you sure you want to delete?' })) return
+      // optimistic — remove from list + decrement stats count
       const snapshot = { items: [...this.model.products.data.items], stats: { ...this.model.stats.data } }
       this.model.products.data.items = this.model.products.data.items.filter((p) => p.id !== id)
       this.model.stats.data.totalCount -= 1
@@ -245,7 +260,7 @@ export const crudActions = action<Pick<ProductActions, 'create' | 'delete'>>(({ 
         // rollback
         this.model.products.data.items = snapshot.items
         this.model.stats.data = snapshot.stats
-        throw new Error('삭제에 실패했습니다')
+        throw new Error('Failed to delete')
       }
     }
   }
@@ -253,9 +268,9 @@ export const crudActions = action<Pick<ProductActions, 'create' | 'delete'>>(({ 
 })
 ```
 
-### interact.ts — Cross-Domain Auth + List/Current 동기화
+### interact.ts — Cross-Domain Auth + List/Current sync
 
-`state()`로 다른 도메인 모델 읽기. `@Authorized`로 auth guard. `context`로 router 접근.
+Read another domain's model with `state()`. Auth guard with `@Authorized`. Router access via `context`.
 
 ```ts
 export const interactActions = action<Pick<ProductActions, 'like' | 'openDetail'>, AppContext>(({ state, context }) => {
@@ -271,7 +286,7 @@ export const interactActions = action<Pick<ProductActions, 'like' | 'openDetail'
       toast.error(error instanceof Error ? error.message : 'Unexpected error')
     })
     async like() {
-      // optimistic update — current + list 동기화
+      // optimistic update — sync current + list
       this.model.currentProduct!.likeCount += 1
       this.model.currentProduct!.isLiked = true
       const item = this.model.products.data.items.find((p) => p.id === this.model.currentProduct!.id)
@@ -286,9 +301,9 @@ export const interactActions = action<Pick<ProductActions, 'like' | 'openDetail'
 })
 ```
 
-## UI 사용
+## UI Usage
 
-- **query 쓰면 UI에서 isLoading 체크 필수**
+- **When using a query, always check isLoading in the UI**
 
 ```tsx
 const { products } = useProduct((s) => ({ products: s.products }))
@@ -300,8 +315,70 @@ return products.data.items.map((p) => <Card key={p.id} product={p} />)
 
 | Decorator | Purpose |
 |-----------|---------|
-| `@OnError(fn)` | 에러 시 사이드이펙트 (에러는 자동 전파, 콜백에서 re-throw 금지). 기본: `toast.error()` |
-| `@OnSuccess(fn)` | 성공 콜백 |
+| `@OnError(fn)` | Side effect on error (error propagates automatically, do not re-throw in callback). Default: `toast.error()` |
+| `@OnSuccess(fn)` | Success callback |
 | `@Debounce(ms)` | Debounce |
 | `@Throttle(ms)` | Throttle |
 | `@Authorized({ when, onDeny })` | Auth guard |
+
+### Reusable decorators — `intercept`
+
+When you need to apply the same precondition (login required, permission check, shared logging, etc.) to multiple actions, create a custom decorator with `intercept`. Use it to wrap an entire class at once instead of repeating `@Authorized` on every method.
+
+The `intercept` factory shares `state`/`context` access, so subscribe to state once at declaration time and run the original method via `execute` on each call. It can be applied to the entire class (all methods) or to individual methods.
+
+```ts
+import { intercept } from 'comwit'
+import { user } from '@/services/app/state/user/model'
+import { popup } from '@/lib/utils/popup'
+
+// Login required — redirect to login page if missing
+const LoginRequired = intercept(({ state, context }) => {
+  const u = state(user)
+  return {
+    intercept: (execute, args) => {
+      if (!u.me) {
+        context.router.push('/login')
+        return   // do not call execute → original method blocked
+      }
+      return execute(...args)   // forward args as-is
+    },
+  }
+})
+
+// Shared delete confirm — if the convention is that the first arg is an id, args can be used too
+const ConfirmDelete = intercept(() => ({
+  intercept: async (execute, args) => {
+    if (!(await popup.confirm({ title: 'Are you sure you want to delete?' }))) return
+    return execute(...args)
+  },
+}))
+```
+
+**Apply to the whole class** — every method goes through LoginRequired
+
+```ts
+@LoginRequired
+class PostCrudActions {
+  async create(title: string) { ... }
+  async update(id: string, title: string) { ... }
+
+  @ConfirmDelete   // class + method decorator combo — both must pass
+  async delete(id: string) { ... }
+}
+```
+
+**Apply to individual methods only** — reads are open, writes require login
+
+```ts
+class MixedActions {
+  async readOnlyList() { ... }            // anyone can call
+
+  @LoginRequired
+  async create(title: string) { ... }     // login required
+}
+```
+
+- Class decorators and method decorators can be combined. Execution order is **outer (class) → inner (method)**.
+- If `execute` is not called, the original method does not run (blocked via early return).
+- Combine with existing `@OnError` for error handling — no need to handle toast inside intercept.

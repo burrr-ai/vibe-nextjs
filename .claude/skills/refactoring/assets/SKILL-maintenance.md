@@ -1,6 +1,6 @@
 ---
 name: refactoring
-description: Refactor project based on .ai.md guidelines. Triggers - "리팩토링 해줘", "refactor"
+description: Refactor project based on .ai.md guidelines. Triggers - "refactor it", "refactor"
 ---
 
 # Refactoring Skill

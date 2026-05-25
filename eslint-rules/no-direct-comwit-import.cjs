@@ -4,6 +4,8 @@
  * Direct use of comwit is allowed only in:
  * - src/state/**
  * - src/lib/state/**
+ * - src/services/{service}/state/**
+ * - src/lib/utils/action.ts (state→server-action boundary that auto-snapshots proxies)
  */
 
 module.exports = {
@@ -27,7 +29,8 @@ module.exports = {
     const isAllowed =
       normalizedPath.includes("/src/state/") ||
       normalizedPath.includes("/src/lib/state/") ||
-      /\/src\/services\/[^/]+\/state\//.test(normalizedPath);
+      /\/src\/services\/[^/]+\/state\//.test(normalizedPath) ||
+      normalizedPath.endsWith("/src/lib/utils/action.ts");
 
     if (isAllowed) return {};
 

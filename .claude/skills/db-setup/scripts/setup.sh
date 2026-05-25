@@ -16,20 +16,20 @@ echo "✅ Database not configured yet, proceeding..."
 echo ""
 
 # Step 1: Get project ID
-echo "📋 Step 1/8: Getting project ID..."
+echo "📋 Step 1/7: Getting project ID..."
 PROJECT_ID=$(npm pkg get id | tr -d "\"")
 echo "📋 Project ID: $PROJECT_ID"
 echo ""
 
 # Step 2: Create D1 database with remote binding
-echo "📋 Step 2/8: Creating D1 database..."
+echo "📋 Step 2/7: Creating D1 database..."
 npx wrangler d1 create --update-config --use-remote --binding DB ${PROJECT_ID}
 npm run cf-typegen
 echo "✅ D1 database created"
 echo ""
 
 # Step 3: Extract database ID and update config
-echo "📋 Step 3/8: Extracting database ID..."
+echo "📋 Step 3/7: Extracting database ID..."
 DATABASE_ID=$(node -e "
   const fs = require('fs');
   const jsonc = require('jsonc-parser');
@@ -45,13 +45,13 @@ echo "✅ package.json updated"
 echo ""
 
 # Step 4: Create database structure
-echo "📋 Step 4/8: Creating database structure..."
+echo "📋 Step 4/7: Creating database structure..."
 mkdir -p src/server/db
 echo "✅ Directory created"
 echo ""
 
 # Step 5: Copy template files
-echo "📋 Step 5/8: Copying template files..."
+echo "📋 Step 5/7: Copying template files..."
 cp .claude/skills/db-setup/assets/db-index.ts src/server/db/index.ts
 cp .claude/skills/db-setup/assets/schema.ts src/server/db/schema.ts
 cp .claude/skills/db-setup/assets/drizzle.config.ts drizzle.config.ts
@@ -59,9 +59,9 @@ echo "✅ Template files copied"
 echo ""
 
 # Step 6: Replace database ID in config
-echo "📋 Step 6/8: Replacing database ID in config..."
+echo "📋 Step 6/7: Replacing database ID in config..."
 
-# 1. 직접 JSON 파싱으로 값 추출 (npm pkg get은 마스킹할 수 있음)
+# 1. Read the value directly from JSON (npm pkg get can mask it)
 ACTUAL_DB_ID=$(node -e "
   try {
     const fs = require('fs');
@@ -73,7 +73,7 @@ ACTUAL_DB_ID=$(node -e "
   }
 ")
 
-# 2. 값이 비어있는지 확인
+# 2. Verify the value is not empty
 if [ -z "$ACTUAL_DB_ID" ]; then
   echo "❌ Error: Database ID not found in package.json"
   exit 1
@@ -81,25 +81,25 @@ fi
 
 echo "🔑 Using Database ID: $ACTUAL_DB_ID"
 
-# 3. 파일 존재 확인
+# 3. Verify the file exists
 if [ ! -f "drizzle.config.ts" ]; then
   echo "❌ Error: drizzle.config.ts not found"
   exit 1
 fi
 
-# 4. 패턴 존재 확인
+# 4. Verify the placeholder still exists
 if ! grep -q "{{DATABASE_ID}}" drizzle.config.ts; then
   echo "⚠️  Warning: {{DATABASE_ID}} pattern not found in drizzle.config.ts"
   echo "   Database ID may have already been replaced"
 else
-  # 5. 안전한 sed 사용 (구분자를 | 로 변경하여 / 문제 회피)
+  # 5. Use sed with `|` as the delimiter to avoid issues with `/` characters
   if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' "s|{{DATABASE_ID}}|$ACTUAL_DB_ID|g" drizzle.config.ts
   else
     sed -i "s|{{DATABASE_ID}}|$ACTUAL_DB_ID|g" drizzle.config.ts
   fi
 
-  # 6. 변경 확인
+  # 6. Confirm the substitution actually happened
   if grep -q "$ACTUAL_DB_ID" drizzle.config.ts; then
     echo "✅ Database ID replaced: $ACTUAL_DB_ID"
   else
@@ -110,16 +110,10 @@ fi
 echo ""
 
 # Step 7: Generate and apply migrations
-echo "📋 Step 7/8: Generating and applying migrations..."
+echo "📋 Step 7/7: Generating and applying migrations..."
 npx drizzle-kit generate
 npx drizzle-kit migrate
 echo "✅ Migrations applied"
-echo ""
-
-# Step 8: Restart dev server
-echo "📋 Step 8/8: Restarting dev server..."
-.tools/start-dev-server.sh 3000
-echo "✅ Dev server restarted"
 echo ""
 
 echo "🎉 Database Setup Complete!"

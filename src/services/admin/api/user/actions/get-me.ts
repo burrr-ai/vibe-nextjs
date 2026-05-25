@@ -1,6 +1,6 @@
 'use server'
 
-import { createParallelAction } from '@/lib/utils'
+import { createAction } from '@/lib/utils'
 import type { User } from '@/services/admin/state/user'
 
 /**
@@ -21,4 +21,4 @@ async function _getMe(): Promise<User | null> {
   }
 }
 
-export const getMe = createParallelAction(_getMe)
+export const getMe = createAction(_getMe)
