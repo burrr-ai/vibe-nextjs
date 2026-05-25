@@ -108,8 +108,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       comwit:
-        specifier: 2.0.0-beta.1
-        version: 2.0.0-beta.1(react@19.1.0)
+        specifier: 1.2.0
+        version: 1.2.0(react@19.1.0)
       date-fns:
         specifier: ^4.1.0
         version: 4.3.0
@@ -3719,8 +3719,8 @@ packages:
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
-  comwit@2.0.0-beta.1:
-    resolution: {integrity: sha512-yiKn255J0qziNWNyloZ/RnzyeHSFgFsOQDB1iQJBk+LkuegyRpzdMpXwcIzx7ot+Xj43cTaXlSVzpAsFYxhIbg==}
+  comwit@1.2.0:
+    resolution: {integrity: sha512-YoBHaY6ggrBPqgCm3i+LT3UEC7RPqMVl4AnIOoTflo17g/BxDvPTOqAqMRFdv0bdJFk2SpcjxAZRjJNSEmy0aQ==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
@@ -10376,7 +10376,7 @@ snapshots:
 
   commander@2.20.3: {}
 
-  comwit@2.0.0-beta.1(react@19.1.0):
+  comwit@1.2.0(react@19.1.0):
     dependencies:
       es-toolkit: 1.46.1
       react: 19.1.0
