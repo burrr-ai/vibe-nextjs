@@ -14,7 +14,6 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.922.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@google/genai": "^1.30.0",

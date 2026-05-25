@@ -5,23 +5,17 @@ description: R2 object storage setup for server-side file uploads. Triggers - "i
 
 ## Workflow
 
+- [ ] Make sure the user has run `pnpm wrangler login` at least once (the setup script needs Cloudflare credentials).
 - [ ] `bash -c '.claude/skills/storage-setup/scripts/setup.sh'`
-- [ ] Ensure `src/server/config.ts` exposes the required env vars (read via `process.env`):
-  ```ts
-  CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID!,
-  R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID!,
-  R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY!,
-  ```
-- [ ] Tell the user (verbally) to add these to `.env.local` — they cannot see files, so phrase it as "I need three Cloudflare values: account ID, R2 access key, and R2 secret. Paste them in chat and I'll wire them up."
 - [ ] Add to the `## Project Structure` section in CLAUDE.md:
   ```
-  server/storage/ - R2 storage (direct server-side upload)
+  server/storage/ - R2 storage (uses the R2 binding from wrangler.jsonc)
     - uploadFile(file, path?): upload a File and return { publicUrl }
   ```
 - [ ] `rm -rf .claude/skills/storage-setup`
 
 ## Notes
 
-- Uploads happen entirely server-side via `@aws-sdk/client-s3` against the R2 S3-compatible endpoint. No presigned URLs, no browser-side PUT.
+- Uploads use the Cloudflare R2 **binding** (`env.R2` from `getCloudflareContext`), not the S3 API. No access keys, no bucket name leaks into the source — the bucket is wired through `wrangler.jsonc` and named via `cg.plugins.r2` in `package.json`.
 - The exposed API is intentionally minimal — `uploadFile(file: File, path?: string)` returning `{ publicUrl }`.
 - Call it from a Server Action: receive `FormData` from the client, extract the `File`, pass it to `uploadFile`.

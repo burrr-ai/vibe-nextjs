@@ -2,6 +2,15 @@
 
 set -e  # Exit on error
 
+# Load Cloudflare credentials (CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN)
+# from .env so wrangler and drizzle-kit can run non-interactively.
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env
+  set +a
+fi
+
 echo "🚀 Starting Database Setup..."
 echo ""
 

@@ -10,8 +10,8 @@ The template ships an opinionated layout (`page → state → api → repository
 
 ```bash
 pnpm install
-cp .env.example .env.local   # then fill in real values
-pnpm dev                     # http://localhost:3000
+cp .env.example .env      # then fill in your Cloudflare credentials
+pnpm dev                  # http://localhost:3000
 ```
 
 Type-check + lint in one shot:
@@ -22,32 +22,29 @@ pnpm run validate
 
 ---
 
-## `.env.local` template
+## `.env` setup
 
-Copy `.env.example` to `.env.local` and fill in the values you actually use. Everything is optional until a feature needs it — the storage skill won't run, for example, until you ask the agent to add file upload.
+The agent provisions Cloudflare resources (D1 databases, R2 buckets) for you whenever you ask for DB or file upload — it calls the `wrangler` CLI under the hood. For that to work non-interactively, put your Cloudflare credentials in `.env` at the repo root. `.env` is git-ignored.
+
+Copy the template:
+
+```bash
+cp .env.example .env
+```
 
 ```dotenv
-# Cloudflare account that owns the R2 bucket / D1 database.
+# Cloudflare account that owns the D1 database / R2 bucket.
+# https://dash.cloudflare.com → right sidebar
 CLOUDFLARE_ACCOUNT_ID=
 
-# R2 API token credentials (used by src/server/storage for direct uploads).
-# Cloudflare Dashboard → R2 → "Manage R2 API tokens" → create token with Object Read & Write.
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
+# Cloudflare API token. Easiest path:
+#   https://dash.cloudflare.com/profile/api-tokens → "Create Token"
+#   → use the "Edit Cloudflare Workers" template, or a custom token with
+#     Workers Scripts: Edit, D1: Edit, R2 Storage: Edit
+CLOUDFLARE_API_TOKEN=
 ```
 
-Reading `process.env` directly from product code is forbidden by ESLint. Always read inside `src/server/config.ts` and import `config` elsewhere:
-
-```ts
-// src/server/config.ts
-import "server-only";
-
-export const config = {
-  CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID!,
-  R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID!,
-  R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY!,
-} as const;
-```
+That's it — these credentials are only read by `wrangler` (and by `drizzle-kit` via the D1 HTTP driver during migrations). The deployed app uses Cloudflare **bindings** at runtime, so no access keys end up in product code. Reading `process.env` directly from product code is also forbidden by ESLint; always go through `src/server/config.ts`.
 
 ---
 

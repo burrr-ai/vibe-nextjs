@@ -2,6 +2,15 @@
 
 set -e  # Exit on error
 
+# Load Cloudflare credentials (CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN)
+# from .env so wrangler can run non-interactively.
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env
+  set +a
+fi
+
 echo "🚀 Starting R2 Storage Setup..."
 echo ""
 
@@ -66,10 +75,8 @@ echo ""
 echo "📋 Step 8/8: Replacing placeholders in template..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
   sed -i '' "s|{{PUBLIC_URL}}|${PUBLIC_URL}|g" src/server/storage/index.ts
-  sed -i '' "s|{{BUCKET_NAME}}|${BUCKET_NAME}|g" src/server/storage/index.ts
 else
   sed -i "s|{{PUBLIC_URL}}|${PUBLIC_URL}|g" src/server/storage/index.ts
-  sed -i "s|{{BUCKET_NAME}}|${BUCKET_NAME}|g" src/server/storage/index.ts
 fi
 echo "✅ Placeholders replaced"
 echo ""
@@ -78,13 +85,6 @@ echo "🎉 R2 Storage Setup Complete!"
 echo ""
 echo "📦 Bucket Name: ${BUCKET_NAME}"
 echo "🌐 Public URL:  ${PUBLIC_URL}"
-echo ""
-echo "⚠️  Required environment variables (add to .env.local):"
-echo "   CLOUDFLARE_ACCOUNT_ID=<your cloudflare account id>"
-echo "   R2_ACCESS_KEY_ID=<R2 API token access key id>"
-echo "   R2_SECRET_ACCESS_KEY=<R2 API token secret access key>"
-echo ""
-echo "   Make sure src/server/config.ts exposes these (read via process.env)."
 echo ""
 echo "Usage:"
 echo "  import { uploadFile } from '@/server/storage';"
