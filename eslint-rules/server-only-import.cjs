@@ -16,8 +16,8 @@ module.exports = {
     const normalizedPath = filename.replace(/\\/g, '/');
     const isServerFile = /src\/server\//.test(normalizedPath);
     if (!isServerFile) return {};
-    // schema.ts는 drizzle-kit이 직접 읽으므로 server-only 제외
-    if (/schema\.ts$/.test(normalizedPath)) return {};
+    // schema 파일은 drizzle-kit 등 외부 도구가 직접 읽으므로 server-only 제외
+    if (/(^|[/\-.])schema\.ts$/.test(normalizedPath)) return {};
     let hasServerOnly = false;
     return {
       ImportDeclaration(node) {

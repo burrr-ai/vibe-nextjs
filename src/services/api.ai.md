@@ -1,9 +1,9 @@
 # API Reference
 
-## 위치
+## Location
 `services/{service}/api/{domain}/`
 
-## 구조
+## Structure
 ```
 api/{domain}/
   ├── index.ts          # typed client
@@ -12,37 +12,37 @@ api/{domain}/
       └── *.ts          # Other operations
 ```
 
-## 규칙
-- **도메인 = 페이지 핏**: api 도메인은 리소스(테이블) 중심이 아니라, 어느 화면에서 쓰일지를 기준으로 묶는다. 프론트 화면에서 필요한 내용이 바뀌면 api 응답도 바뀔 수 있다. 여러 페이지에서 공통으로 쓸 수도 있지만, 대체로 메인 페이지에 핏한 내용들을 하나의 도메인으로 묶는 것을 추천한다.
-- **Minimal args**: userId/session은 내부에서 가져온다. parameter로 받지 않는다. (auth 연동 후 `getServerSession`은 `@/server/auth/{service}`에서 import)
+## Rules
+- **Domain = page fit**: Group api domains by which screen they serve, not around resources (tables). If the screen's needs change, the api response changes too. A domain may be shared across multiple pages, but generally group the content tailored to a main page into a single domain.
+- **Minimal args**: userId/session is obtained internally. Do not accept them as parameters. (After auth integration, import `getServerSession` from `@/server/auth/{service}`)
 - **Server actions**: All methods are `'use server'` async functions
-- **DB 접근**: `@/server/repository` 경유 (직접 DB 접근 금지, 직접 목코드 작성 금지)
-  - mock 데이터는 `src/server/repository/_data/`에서 관리. repository `.ai.md` 참조.
-- **소유권 확인**: findAll 등 조회 시 현재 로그인 유저 소유의 리소스만 필터링하여 반환 (public 리소스는 예외)
-- **Frontend-friendly**: UI에서 바로 쓸 수 있는 형태로 변환하여 반환
+- **DB access**: Always go through `@/server/repository` (no direct DB access, no inline mock code)
+  - Mock data is managed under `src/server/repository/_data/`. See repository `.ai.md`.
+- **Ownership check**: For findAll and other queries, filter and return only resources owned by the currently logged-in user (public resources are an exception)
+- **Frontend-friendly**: Transform into a shape the UI can use directly
   ```typescript
-  // repository에서 온 원본
+  // Raw from repository
   { likeCount: 3, userId: 'abc' }
-  // api에서 변환 후
-  { likeCount: 3, isLikedByMe: true, displayCount: '3개' }
+  // Transformed in api
+  { likeCount: 3, isLikedByMe: true, displayCount: '3 likes' }
   ```
 - **Type safety**: Define `DomainAPI` interface in types.ts
-- **findAll**: 두 번째 인자 `PageRequest`, 응답 `Pageable<T>` — `@/server/repository/types` 에서 import
+- **findAll**: Second argument is `PageRequest`, response is `Pageable<T>` — import from `@/server/repository/types`
 - **Timestamp**:
-  - 입력: KST 문자열 → UTC로 변환하여 repository에 전달
-  - 응답: UTC timestamp → KST 기준 포맷된 날짜 문자열로 변환하여 반환
+  - Input: KST string → convert to UTC before passing to repository
+  - Response: UTC timestamp → convert to a KST-formatted date string
   ```typescript
-  // 입력 (KST 문자열 → UTC)
+  // Input (KST string → UTC)
   const utcDate = new Date(kstDateString)
-  // 응답 (UTC → KST 포맷)
+  // Response (UTC → KST format)
   const formatted = utcDate.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' })
   ```
 
 
-## 작성 순서
-1. **types.ts 먼저** — 어떤 화면에서 쓰일지 생각하며 API 인터페이스와 응답 타입을 정의
-2. actions/*.ts — server action 구현
-3. index.ts — typed client 생성
+## Write Order
+1. **types.ts first** — define the API interface and response types while thinking about which screen will use them
+2. actions/*.ts — implement server actions
+3. index.ts — create the typed client
 
 ## types.ts
 
@@ -57,13 +57,13 @@ api/{domain}/
 import type { PageRequest, Pageable } from '@/server/repository/types'
 
 export interface DomainAPI {
-  /** 항목 생성 */
+  /** Create an item */
   create: (request: CreateRequest) => Promise<void>
 
-  /** 목록 조회 — 리스트는 항상 Pageable<T> 리턴 */
+  /** List query — lists always return Pageable<T> */
   findAll: (filter: FindAllFilter, pageable: PageRequest) => Promise<Pageable<Simple>>
 
-  /** 상세 조회 */
+  /** Detail query */
   find: (id: string) => Promise<Detail>
 }
 
@@ -87,29 +87,38 @@ export type CreateRequest = {
 
 ## actions/*.ts (Server Actions)
 
-- `'use server'` 필수
-- 모든 export는 `createParallelAction`으로 감싸야 함 (ESLint `api-parallel-action` 강제)
-- 내부 함수는 `_` prefix로 선언, `createParallelAction`으로 감싼 결과를 export
+- `'use server'` required
+- Every export must be wrapped with `createAction` (enforced by ESLint `api-create-action`)
+- Declare the internal function with `_` prefix and export the result wrapped by `createAction`
+- `createAction` handles bypassing Next.js serialization (parallel execution) and exposing error messages in one step
+
+### Throw errors with `ActionError`
+
+- Any message you want to show to the user **must** be thrown via `new ActionError("...")`
+- Plain `new Error(...)` is masked by Next.js and only a generic message reaches the client (forbidden by ESLint `api-action-error`)
+- Errors thrown by libraries or unexpected throws will be auto-masked if left as is
 
 **Pattern:**
 ```typescript
 'use server'
 
-import { createParallelAction } from '@/lib/utils'
+import { createAction, ActionError } from '@/lib/utils'
 
 async function _create(request: CreateRequest): Promise<void> {
+  if (!request.name) throw new ActionError('Name is required')
   // ...
 }
 
-export const create = createParallelAction(_create)
+export const create = createAction(_create)
 ```
 
 ## index.ts
 
-- `resolveActions()`로 감싸서 export (ESLint `api-structure` 강제)
-- 개별 함수 export 금지 — 객체로만 export
-- 타입 어노테이션 없음 (추론에 맡김)
-- `export { X } from './actions/...'` 직접 re-export 금지
+- Export wrapped with `resolveActions()` (enforced by ESLint `api-structure`)
+- Do not export individual functions — export only as an object
+- No type annotations (let inference handle it)
+- Do not re-export directly with `export { X } from './actions/...'`
+- `resolveActions` automatically deep-snapshots any comwit proxy (state) passed as an argument. The caller (state action) does not need to wrap with `snapshot()`.
 
 **Pattern:**
 ```typescript
@@ -124,14 +133,21 @@ import { findAll } from './actions/find-all'
 export const domain = resolveActions({ create, find, findAll })
 ```
 
-**호출 측:**
+**Caller side:**
 ```typescript
-// 단일 호출 — 그냥 await 하면 됨
+// Single call — just await it
 const item = await domain.find(id)
 
-// 병렬 호출 — Promise.all 쓰면 자동으로 병렬 실행
+// Parallel calls — Promise.all runs them in parallel automatically
 const [items, stats] = await Promise.all([
   domain.findAll(filter, pageable),
   domain.getStats(),
 ])
+
+// ActionError messages are re-thrown as plain Error and caught by try/catch
+try {
+  await domain.create(request)
+} catch (e) {
+  toast(e.message) // ActionError message or a masked generic message
+}
 ```

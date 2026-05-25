@@ -16,9 +16,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
       context={{ router }}
       defaultOptions={{
         query: {
-          staleTime: 30_000,
-          cacheTime: 120_000,
-          gcTime: 180_000,
+          staleTime: 0,
         },
       }}
     >

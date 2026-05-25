@@ -1,9 +1,9 @@
-# Page 레이어
+# Page Layer
 
-## 위치
+## Location
 `services/{service}/page/{route}/`
 
-## 구조
+## Structure
 
 **Always split page into separate section files.** Don't put everything in one file.
 
@@ -23,28 +23,30 @@ page/{route}/
 
 ```
 page/layout/
-  ├── index.tsx       # 서버 컴포넌트: getMe 호출 → client 렌더
-  └── client.tsx      # 클라이언트: UserInit + App UI
+  ├── index.tsx       # Server component: calls getMe → renders client
+  └── client.tsx      # Client: UserInit + App UI
 ```
 
-- 서버 컴포넌트(`index.tsx`): 서버에서 데이터 fetch (getMe 등)
-- 클라이언트 컴포넌트(`client.tsx`): UserInit + UI (Header, Nav, Footer 등)
-- Root Layout은 `src/lib/layout/root-layout/`에 위치 (글로벌: StateProvider, OverlayProvider, Toaster)
+- Server component (`index.tsx`): fetches data on the server (getMe, etc.)
+- Client component (`client.tsx`): UserInit + UI (Header, Nav, Footer, etc.)
+- Root Layout lives at `src/lib/layout/root-layout/` (global: StateProvider, OverlayProvider, Toaster)
 
-## 규칙
-- `'use client'` 필수 (layout 서버 컴포넌트 제외)
-- `<img />` 사용 (`<Image />` 금지)
-- API 직접 import 금지 → state 경유
-- layout/index.tsx는 서버 컴포넌트, layout/client.tsx는 클라이언트
-- **클라이언트 데이터 가공 금지** → 모든 가공은 API에서:
-  - `.filter().length`, `.reduce()` 등 집계 금지 → API에서 group/sum
-  - `.filter(o => o.status === 'x')` 등 상태 필터링 금지 → API에서 where 조건
-  - `.slice(0, N)` 등 잘라내기 금지 → API에서 limit/order by
-  - 이유: 페이지네이션 시 현재 페이지 데이터만으로 잘못된 수치가 나옴, 전체 데이터가 아닌 부분 데이터를 가공하는 것은 항상 틀림
+## Rules
+- `'use client'` required (except for layout server components)
+- Use `<img />` (`<Image />` is forbidden)
+- For internal routing, use `<Link>` from `next/link` (do not use `<a>`). For external links (`http://`, `https://`, `mailto:`, `tel:`, `#anchor`), `<a>` is allowed
+- Do not import api directly → go through state
+- layout/index.tsx is a server component; layout/client.tsx is a client component
+- **No client-side data processing** → all processing happens in the API:
+  - No aggregations like `.filter().length`, `.reduce()` → group/sum in the API
+  - No status filtering like `.filter(o => o.status === 'x')` → use where conditions in the API
+  - No truncation like `.slice(0, N)` → use limit/order by in the API
+  - Reason: when paginating, computing from only the current page's data produces wrong numbers; processing partial data instead of the full dataset is always wrong
 
 ## UI Components
 
 - Use shadcn from `@lib/components/ui`
+- **Do not use native input/textarea/select directly** → use `@lib/components/ui` components (`Input`, `Textarea`, `Select`, `Checkbox`, `RadioGroup`, `Calendar` (date), `Editor` (rich text, Tiptap), etc.). If a needed component is missing, add it first and then use it.
 - Tailwind v4
 - **Animation**: Tailwind CSS animations by default. For complex effects, use `motion` from `motion/react` (avoid relayout: prefer scale, translate, opacity over x, y, width, height)
 - Use regular `<img>` tags (NOT Next.js `<Image>` component - Cloudflare Workers compatibility)
@@ -83,9 +85,9 @@ const actions = useProduct((state) => state.actions);
 const { products, actions } = useProduct();
 ```
 
-### Query 데이터 사용
+### Using Query Data
 
-query 필드는 `data` 외에도 로딩/에러 상태를 함께 제공한다.
+Query fields expose loading/error state alongside `data`.
 
 ```tsx
 const product = useProduct((state) => ({
@@ -93,20 +95,20 @@ const product = useProduct((state) => ({
   actions: state.actions,
 }));
 
-// isLoading — 최초 로딩 (캐시 없음)
+// isLoading — initial load (no cache)
 if (product.products.isLoading) return <Skeleton />
 
-// isError — 에러 발생
+// isError — error occurred
 if (product.products.isError) return <Error error={product.products.error} />
 
-// data — 실제 데이터
+// data — actual data
 return product.products.data.items.map((p) => <Card key={p.id} product={p} />)
 ```
 
-### isFetching — 백그라운드 재조회
+### isFetching — background refetch
 
-`isFetching`은 refetch, 페이지 전환 등 백그라운드 요청 중일 때 `true`.
-`isLoading`과 달리 기존 데이터가 유지된 채로 동작한다.
+`isFetching` is `true` during a background request such as refetch or page change.
+Unlike `isLoading`, the existing data is preserved while it runs.
 
 ```tsx
 const product = useProduct((state) => ({
@@ -129,7 +131,7 @@ return (
 )
 ```
 
-> `isLoading` = 첫 로딩 (data 없음) · `isFetching` = 백그라운드 재조회 (data 있음)
+> `isLoading` = first load (no data) · `isFetching` = background refetch (data present)
 
 ## SSR Detail Pages
 
@@ -142,7 +144,7 @@ export default function PostDetail({ initialData }) {
   post.actions.setCurrentPost(initialData); // This method must not cause re-render
 
   /**
-   * (생략)
+   * (omitted)
    */
 }
 ```
@@ -162,7 +164,7 @@ export default function PostDetail({ id }) {
   }, [id]);
 
   /**
-   * (생략)
+   * (omitted)
    */
 }
 ```

@@ -11,6 +11,7 @@ const noUseClientInApp = require('./no-use-client-in-app.cjs');
 const noDirectComwitImport = require('./no-direct-comwit-import.cjs');
 const clientComponentNoApiImport = require('./client-component-no-api-import.cjs');
 const noNextImage = require('./no-next-image.cjs');
+const noAnchorTag = require('./no-anchor-tag.cjs');
 const kebabCaseFilename = require('./kebab-case-filename.cjs');
 const noMultipleStateHookCalls = require('./no-multiple-state-hook-calls.cjs');
 const indexOnlyImport = require('./index-only-import.cjs');
@@ -19,7 +20,9 @@ const noPageMockImport = require('./no-page-mock-import.cjs');
 const noRootAppFolder = require('./no-root-app-folder.cjs');
 const noDbInApi = require('./no-db-in-api.cjs');
 const serverOnlyImport = require('./server-only-import.cjs');
-const apiParallelAction = require('./api-parallel-action.cjs');
+const apiCreateAction = require('./api-create-action.cjs');
+const apiActionError = require('./api-action-error.cjs');
+const betterAuthRequiredOptions = require('./better-auth-required-options.cjs');
 
 module.exports = {
   rules: {
@@ -32,6 +35,7 @@ module.exports = {
     'no-direct-comwit-import': noDirectComwitImport,
     'client-component-no-api-import': clientComponentNoApiImport,
     'no-next-image': noNextImage,
+    'no-anchor-tag': noAnchorTag,
     'kebab-case-filename': kebabCaseFilename,
     'no-multiple-state-hook-calls': noMultipleStateHookCalls,
     'index-only-import': indexOnlyImport,
@@ -40,6 +44,8 @@ module.exports = {
     'no-root-app-folder': noRootAppFolder,
     'no-db-in-api': noDbInApi,
     'server-only-import': serverOnlyImport,
-    'api-parallel-action': apiParallelAction,
+    'api-create-action': apiCreateAction,
+    'api-action-error': apiActionError,
+    'better-auth-required-options': betterAuthRequiredOptions,
   },
 };

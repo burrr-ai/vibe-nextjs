@@ -38,6 +38,7 @@ const eslintConfig = [
       "custom/no-direct-comwit-import": "error",
       "custom/client-component-no-api-import": "error",
       "custom/no-next-image": "error",
+      "custom/no-anchor-tag": "error",
       "custom/index-only-import": "error",
       "custom/api-only-server-action": "error",
       // Naming convention rules
@@ -47,7 +48,9 @@ const eslintConfig = [
       "custom/no-root-app-folder": "error",
       "custom/no-db-in-api": "error",
       "custom/server-only-import": "error",
-      "custom/api-parallel-action": "error",
+      "custom/api-create-action": "error",
+      "custom/api-action-error": "error",
+      "custom/better-auth-required-options": "error",
     }
   }
 ];

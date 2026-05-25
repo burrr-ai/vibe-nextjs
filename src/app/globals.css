@@ -6,12 +6,46 @@
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
 
+:root {
+  --bg: #ffffff;
+  --ink: #0a0a0a;
+  --ink-muted: #6b7280;
+  --surface-subtle: #f4f5f7;
+  --accent: #3182f6;
+  --line: #e8e8e5;
+  --danger: #d63737;
+}
+
 @theme {
   --font-sans: var(--font-pretendard), var(--font-noto-sans-kr);
+
+  /* shadcn/ui 토큰 매핑 — bg-background / bg-popover / bg-accent / border 등이 참조.
+     이거 없으면 Dialog·Popover·DropdownMenu 등이 전부 투명하게 렌더된다. */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--bg);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--bg);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--accent);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--surface-subtle);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface-subtle);
+  --color-muted-foreground: var(--ink-muted);
+  --color-accent: var(--surface-subtle);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--accent);
 }
 
 @layer base {
   body {
     font-family: var(--font-pretendard), var(--font-noto-sans-kr), sans-serif;
+    background: var(--bg);
+    color: var(--ink);
   }
 }
